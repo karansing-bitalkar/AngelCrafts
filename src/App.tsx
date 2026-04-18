@@ -21,6 +21,7 @@ import Careers from "@/pages/Careers";
 import Blog from "@/pages/Blog";
 import NotFound from "@/pages/NotFound";
 import ArtisanShop from "@/pages/ArtisanShop";
+import ProductDetail from "@/pages/ProductDetail";
 
 // Customer Dashboard
 import CustomerHome from "@/pages/dashboard/customer/CustomerHome";
@@ -74,7 +75,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/marketplace/:id" element={<Marketplace />} />
+          <Route path="/marketplace/:id" element={<ProductDetail />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

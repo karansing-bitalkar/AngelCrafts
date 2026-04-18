@@ -7,7 +7,9 @@ import ProductCard from "@/components/features/ProductCard";
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/features/ToastContainer";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { formatPrice, truncate } from "@/lib/utils";
+import AuthGateModal from "@/components/features/AuthGateModal";
 
 /** Same slug helper as ProductCard */
 function toShopSlug(artisanId: string, artisanName: string): string {
@@ -29,7 +31,19 @@ export default function Marketplace() {
   const [showFilters, setShowFilters] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const { addToCart, toggleWishlist, isInWishlist } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const [authModal, setAuthModal] = useState(false);
+  const [authAction, setAuthAction] = useState("");
+
+  const requireAuth = (action: string, fn: () => void) => {
+    if (!isAuthenticated) {
+      setAuthAction(action);
+      setAuthModal(true);
+      return;
+    }
+    fn();
+  };
 
   const filtered = SAMPLE_PRODUCTS.filter((p) => {
     const matchSearch =
@@ -50,6 +64,7 @@ export default function Marketplace() {
   return (
     <div className="pt-20 min-h-screen">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <AuthGateModal isOpen={authModal} onClose={() => setAuthModal(false)} action={authAction} />
 
       {/* Header */}
       <div className="bg-gradient-hero py-14">
@@ -306,7 +321,7 @@ export default function Marketplace() {
                         </div>
                         <div className="flex items-center gap-2 mt-3">
                           <button
-                            onClick={() => { toggleWishlist(p as any); }}
+                            onClick={() => requireAuth("save to wishlist", () => { toggleWishlist(p as any); })}
                             className={`p-2 rounded-xl border transition-all ${
                               inWish
                                 ? "border-red-300 bg-red-50 text-red-500"
@@ -316,7 +331,7 @@ export default function Marketplace() {
                             <FiHeart className={`w-4 h-4 ${inWish ? "fill-current" : ""}`} />
                           </button>
                           <button
-                            onClick={() => { addToCart(p as any); addToast(`${p.title} added to cart! 🛍️`); }}
+                            onClick={() => requireAuth("add items to cart", () => { addToCart(p as any); addToast(`${p.title} added to cart! 🛍️`); })}
                             className="px-4 py-2 rounded-xl bg-gradient-primary text-white text-xs font-semibold hover:shadow-soft transition-all flex items-center gap-1.5"
                           >
                             <FiShoppingBag className="w-3.5 h-3.5" /> Add to Cart

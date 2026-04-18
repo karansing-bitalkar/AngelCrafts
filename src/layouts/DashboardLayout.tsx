@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiHome, FiUser, FiShoppingBag, FiHeart, FiStar, FiLogOut,
@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { getInitials, cn } from "@/lib/utils";
 import ConfirmModal from "@/components/features/ConfirmModal";
+import NotificationBell from "@/components/features/NotificationBell";
 
 const customerLinks = [
   { label: "Dashboard", path: "/dashboard/customer", icon: FiHome, end: true },
@@ -48,6 +49,31 @@ const adminLinks = [
   { label: "Settings", path: "/dashboard/admin/settings", icon: FiSettings },
 ];
 
+// Mobile bottom nav — 5 most-used links per role
+const customerBottomNav = [
+  { label: "Home", path: "/dashboard/customer", icon: FiHome, end: true },
+  { label: "Browse", path: "/dashboard/customer/browse", icon: FiGrid },
+  { label: "Cart", path: "/dashboard/customer/cart", icon: FiShoppingCart },
+  { label: "Messages", path: "/dashboard/customer/messages", icon: FiMessageSquare },
+  { label: "Profile", path: "/dashboard/customer/profile", icon: FiUser },
+];
+
+const artisanBottomNav = [
+  { label: "Home", path: "/dashboard/artisan", icon: FiHome, end: true },
+  { label: "Products", path: "/dashboard/artisan/products", icon: FiGrid },
+  { label: "Orders", path: "/dashboard/artisan/orders", icon: FiPackage },
+  { label: "Messages", path: "/dashboard/artisan/messages", icon: FiMessageSquare },
+  { label: "Earnings", path: "/dashboard/artisan/earnings", icon: FiDollarSign },
+];
+
+const adminBottomNav = [
+  { label: "Home", path: "/dashboard/admin", icon: FiHome, end: true },
+  { label: "Users", path: "/dashboard/admin/users", icon: FiUsers },
+  { label: "Products", path: "/dashboard/admin/products", icon: FiGrid },
+  { label: "Orders", path: "/dashboard/admin/orders", icon: FiPackage },
+  { label: "Settings", path: "/dashboard/admin/settings", icon: FiSettings },
+];
+
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,6 +85,11 @@ export default function DashboardLayout() {
     user?.role === "admin" ? adminLinks
     : user?.role === "artisan" ? artisanLinks
     : customerLinks;
+
+  const bottomNavLinks =
+    user?.role === "admin" ? adminBottomNav
+    : user?.role === "artisan" ? artisanBottomNav
+    : customerBottomNav;
 
   const roleLabel =
     user?.role === "admin" ? "Admin Panel"
@@ -297,20 +328,77 @@ export default function DashboardLayout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-pink-100 shadow-sm">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
-          >
-            <FiMenu className="w-5 h-5 text-gray-600" />
-          </button>
-          <span className="font-display font-bold text-gradient">{roleLabel}</span>
+        {/* Mobile & Desktop Top Header */}
+        <header className="flex items-center justify-between gap-4 px-4 py-3 bg-white border-b border-pink-100 shadow-sm">
+          {/* Left: hamburger (mobile) + role label */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 rounded-xl hover:bg-primary/10 transition-colors"
+            >
+              <FiMenu className="w-5 h-5 text-gray-600" />
+            </button>
+            <span className="font-display font-bold text-gradient">{roleLabel}</span>
+          </div>
+
+          {/* Right: notification bell + user avatar */}
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user?.name}
+                className="w-8 h-8 rounded-xl object-cover ring-2 ring-pink-100"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-gradient-primary flex items-center justify-center text-white text-xs font-bold">
+                {getInitials(user?.name || "U")}
+              </div>
+            )}
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Main scrollable content — leave bottom padding for mobile nav */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 sm:pb-4 lg:pb-6">
           <Outlet />
         </main>
+
+        {/* ── Mobile Bottom Navigation (< 640px) ───────────────── */}
+        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-pink-100 shadow-glass flex items-center safe-area-inset-bottom">
+          {bottomNavLinks.map(({ label, path, icon: Icon, end }) => (
+            <NavLink
+              key={path}
+              to={path}
+              end={end}
+              className={({ isActive }) =>
+                cn(
+                  "flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors relative",
+                  isActive
+                    ? "text-primary-600"
+                    : "text-gray-400 hover:text-primary-500"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobileActiveTab"
+                      className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-primary rounded-full"
+                    />
+                  )}
+                  <div className={cn(
+                    "w-10 h-8 rounded-xl flex items-center justify-center transition-all",
+                    isActive ? "bg-primary/10" : ""
+                  )}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-medium leading-none">{label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
       </div>
 
       {/* Logout Modal */}
